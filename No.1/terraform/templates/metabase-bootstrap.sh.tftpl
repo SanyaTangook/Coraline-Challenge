@@ -1,0 +1,47 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y docker jq
+systemctl enable --now docker
+
+install -d -m 0700 /opt/metabase
+
+# The RDS-managed secret contains hostname, port, username, and password.
+SECRET=$(aws secretsmanager get-secret-value \
+  --region "${aws_region}" \
+  --secret-id "${rds_secret_arn}" \
+  --query SecretString \
+  --output text)
+
+DB_HOST=$(jq -r '.host' <<< "$SECRET")
+DB_PORT=$(jq -r '.port' <<< "$SECRET")
+DB_USER=$(jq -r '.username' <<< "$SECRET")
+DB_PASSWORD=$(jq -r '.password' <<< "$SECRET")
+
+# Create the application database once. Re-running user data is safe.
+if ! docker run --rm --network host \
+  -e PGPASSWORD="$DB_PASSWORD" \
+  postgres:16-alpine \
+  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -tAc \
+  "SELECT 1 FROM pg_database WHERE datname = '${metabase_db_name}'" | grep -q 1; then
+  docker run --rm --network host \
+    -e PGPASSWORD="$DB_PASSWORD" \
+    postgres:16-alpine \
+    psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -v ON_ERROR_STOP=1 \
+    -c "CREATE DATABASE ${metabase_db_name}"
+fi
+
+# Port 3000 is allowed at the EC2 security group only for the configured CIDRs.
+docker pull "${metabase_image}"
+docker rm -f metabase 2>/dev/null || true
+docker run -d \
+  --name metabase \
+  --restart unless-stopped \
+  --publish 3000:3000 \
+  -e MB_DB_TYPE=postgres \
+  -e MB_DB_DBNAME="${metabase_db_name}" \
+  -e MB_DB_PORT="$DB_PORT" \
+  -e MB_DB_HOST="$DB_HOST" \
+  -e MB_DB_USER="$DB_USER" \
+  -e MB_DB_PASS="$DB_PASSWORD" \
+  "${metabase_image}"

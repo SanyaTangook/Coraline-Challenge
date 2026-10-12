@@ -1,0 +1,31 @@
+# Copy this file to terraform.tfvars and adjust values for your AWS account.
+aws_region         = "ap-southeast-7"
+availability_zone           = "ap-southeast-7a"
+secondary_availability_zone = "ap-southeast-7b"
+name                        = "production-app-network"
+vpc_cidr                    = "10.0.0.0/16"
+public_subnet_cidr          = "10.0.1.0/24"
+private_db_subnet_cidr_a    = "10.0.11.0/24"
+private_db_subnet_cidr_b    = "10.0.12.0/24"
+
+# RDS manages the master password in AWS Secrets Manager; do not put a
+# password in this file.
+db_instance_class = "db.t4g.medium"
+db_multi_az       = true
+
+# The instance is managed with AWS Systems Manager; no SSH key or inbound rule
+# is configured.
+ec2_instance_type         = "t4g.micro"
+ec2_root_volume_size_gib  = 20
+metabase_database_name    = "metabase"
+metabase_image            = "metabase/metabase:v0.53.0"
+# Restrict this to your office/VPN public IP before production use, for example
+# ["203.0.113.10/32"]. The default allows access from any IP.
+metabase_allowed_cidrs    = ["0.0.0.0/0"]
+
+tags = {
+  Environment = "production"
+  ManagedBy   = "Terraform"
+  Project     = "coraline-challenge"
+  Owner       = "platform-team"
+}
