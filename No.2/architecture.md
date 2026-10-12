@@ -18,7 +18,7 @@ Architecture นี้ออกแบบสำหรับ Web Application ท�
    Security Group กำหนดว่า IP/Port ไหนเข้าถึงอะไรได้
 3. **Web application (ECS):** เป็นจุดติดต่อระหว่าง user กับ service อื่น
 4. **API (ECS):** รับคำขอจาก Web application และอ่าน/เขียนข้อมูลกับ RDS
-5. **Airflow (EC2):** [ระบุหน้าที่ เช่น ตั้งเวลาและควบคุม data pipeline]
+5. **Airflow (EC2):** ตั้งเวลาและควบคุม data pipeline
 6. **On-premise:** [Web application / Airflow] เชื่อมต่อผ่าน VPN หรือ
    Private endpoint เพื่อให้ข้อมูลไม่ผ่าน public internet
 7. **Develop Team:** เข้าถึง URL หรือฐานข้อมูลได้ผ่าน VPN ที่เตรียมไว้เท่านั้น
